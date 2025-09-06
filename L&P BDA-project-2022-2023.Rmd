@@ -10,24 +10,7 @@ output:
 
 \newpage
 
-# BDA project 2022-2023
 
-## Project description
-
-Welcome to the BDA project 2022-2023 syllabus. In this document you will find all the information you need to do your BDA project.\
-
-During the project, we will use a dataset produced by Caldana et al. (2011). During the "do-it-yourself" part of the first 6 practical sessions you should apply the new data analysis method that you have learned on this dataset. Our aim is that you will learn more about the methods and their comparison by applying them to the same data. Over time you will learn what the properties of your data are, what questions can be answered by the different methods, what samples tend to cluster together, and what metabolites or genes are important to distinguish the conditions. Learning the properties of your data is very helpful when you are applying a new method.
-
-### Project goals
-
-The following goals are defined for this project:
-
-1.  You know the origin of the data and the specific properties of the data.\
-2.  You are able to apply the methods, and you are able to interpret the results.\
-3.  You comprehend the pitfalls of multivariate data and validation strategies to prevent overfit.\
-4.  You are able to critically review data analysis applications of the above mentioned methods.\
-
-Keep in mind that the assignments are intended to assess whether you/your group has reached these goals. We hope this helps in answering the questions.
 
 ### Groups
 
@@ -38,33 +21,7 @@ name1 = "Yuecheng Liu"
 name2 = "Junyi Ping"
 ```
 
-### Submission and grading
-
-You will hand in your project markdown file and knitted .pdf files in the first and second week. In the first week you will get an indicative pass/fail grade and some feedback to help you progress. In the second week you will receive a full grade and some feedback. The deadline for the first week submission is Monday January 16th 11:00, for which you need to complete Assignments 1 up to and including Assignment 3. The deadline for the second week submission is Monday January 23rd 11:00, for which you will need to complete Assignment 1 up to and including Assignment 6. Note that you can use the week 1 feedback to improve your answers from Assignments 1-3 before the second submission! Whichever version of Assignments 1-3 will give you the highest grade will be used for grading in week 2.
-
-The project grade and the exam grade will be combined to produce the final grade of the course. The project grade (P) will have weight 1 and the exam grade (E) will have weight 2. Both grades have to be equal to or higher than 5.0. If you fail the project but not the exam, you will have to do a re-take of the project to finish the course.
-
-$finalGrade = \frac{1*P+2*E}{3}$
-
-Please refer to the course book for more information on the BDA course organisation.
-
-Grading of the project will be done using a rubric for each assignment. An overview of the number of points you can get for every assignment is given below. Every question states how many points you can get for it.
-
-|                 Assignment                 | Number of points |
-|:------------------------------------------:|:----------------:|
-|        Assignment 1: Linear Algebra        |        33        |
-|   Assignment 2: Gene expression analysis   |        33        |
-| Assignment 3: Principal Component Analysis |        34        |
-|          Assignment 4: Clustering          |        34        |
-|        Assignment 5: Classification        |        33        |
-|             Assignment 6: ASCA             |        33        |
-|                   Total                    |       200        |
-
-It is crucial for our graders to understand what you have done and why. Please elaborate in the supplied text boxes below each question what your reasoning is for making a certain step. To make your plots eligible for grading, you should add a clear x-axis label, y-axis label and title, as well as a clear description of what you have done to make your plot. When writing your code in the code blocks, add comments clarifying what you are doing! You can do this by adding a hash tag ("\#") before the comment.
-
 ### The Caldana data
-
-In this project we will use a dataset produced by Caldana et al. (2011). The paper can be found on Canvas, and we highly recommend you to read it before starting the project. You don't need to understand all parts of the paper, but it's important to focus on the experimental design, the computational methods used, and the biology so you can understand your own results better.
 
 The Caldana et al. (2011) paper describes an experiment where *Arabidopsis thaliana* plants were grown under normal temperature (21$^\circ$C) and light conditions (150 $\mu$E) (see figure 1). After some time, they were moved to a different temperature and/or light condition. The conditions are as follows: the base condition (encoded 21-L), 21 $^\circ$C and bright light (21-HL), 32 $^\circ$C and normal light (32-L), 4 $^\circ$C and low light (4-L), 21 $^\circ$C and low light (21-LL), 4 $^\circ$C in the dark (4-D), 21 $^\circ$C in the dark (21-D) and 32 $^\circ$C in the dark (32-D). At every timepoint, the rosetta leaves of six new plants were sampled for transcriptomics and metabolomics analysis. This way the adaptation of the plants to the new conditions could be tracked. Samples were taken at 18 timepoints: 20, 40, ..., 360 minutes (and the control timepoint 0).
 
