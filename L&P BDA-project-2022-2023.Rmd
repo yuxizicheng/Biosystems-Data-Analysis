@@ -1,0 +1,1122 @@
+---
+title: "BDA project 2022-2023"
+author: "G.R. van der Ploeg, J.A. Westerhuis, A.U.S. Heintz-Buschart, A.K. Smilde"
+date: "09/01/2023 - 20/01/2023"
+output: 
+  pdf_document: 
+    toc: yes
+    latex_engine: xelatex
+---
+
+\newpage
+
+# BDA project 2022-2023
+
+## Project description
+
+Welcome to the BDA project 2022-2023 syllabus. In this document you will find all the information you need to do your BDA project.\
+
+During the project, we will use a dataset produced by Caldana et al. (2011). During the "do-it-yourself" part of the first 6 practical sessions you should apply the new data analysis method that you have learned on this dataset. Our aim is that you will learn more about the methods and their comparison by applying them to the same data. Over time you will learn what the properties of your data are, what questions can be answered by the different methods, what samples tend to cluster together, and what metabolites or genes are important to distinguish the conditions. Learning the properties of your data is very helpful when you are applying a new method.
+
+### Project goals
+
+The following goals are defined for this project:
+
+1.  You know the origin of the data and the specific properties of the data.\
+2.  You are able to apply the methods, and you are able to interpret the results.\
+3.  You comprehend the pitfalls of multivariate data and validation strategies to prevent overfit.\
+4.  You are able to critically review data analysis applications of the above mentioned methods.\
+
+Keep in mind that the assignments are intended to assess whether you/your group has reached these goals. We hope this helps in answering the questions.
+
+### Groups
+
+We encourage you to do the project in pairs. This is because many of the open-ended questions we ask during your project are open for debate. In such cases it is really helpful to have a partner who you can discuss with about what the next step should be. Also you will be able to run RStudio on two computers at the same time, which will help you in splitting up the tasks and completing the assignments faster overall. Please supply your names in the code block below.
+
+```{r Names, eval=TRUE, echo=TRUE, message=FALSE, include=TRUE}
+name1 = "Yuecheng Liu"
+name2 = "Junyi Ping"
+```
+
+### Submission and grading
+
+You will hand in your project markdown file and knitted .pdf files in the first and second week. In the first week you will get an indicative pass/fail grade and some feedback to help you progress. In the second week you will receive a full grade and some feedback. The deadline for the first week submission is Monday January 16th 11:00, for which you need to complete Assignments 1 up to and including Assignment 3. The deadline for the second week submission is Monday January 23rd 11:00, for which you will need to complete Assignment 1 up to and including Assignment 6. Note that you can use the week 1 feedback to improve your answers from Assignments 1-3 before the second submission! Whichever version of Assignments 1-3 will give you the highest grade will be used for grading in week 2.
+
+The project grade and the exam grade will be combined to produce the final grade of the course. The project grade (P) will have weight 1 and the exam grade (E) will have weight 2. Both grades have to be equal to or higher than 5.0. If you fail the project but not the exam, you will have to do a re-take of the project to finish the course.
+
+$finalGrade = \frac{1*P+2*E}{3}$
+
+Please refer to the course book for more information on the BDA course organisation.
+
+Grading of the project will be done using a rubric for each assignment. An overview of the number of points you can get for every assignment is given below. Every question states how many points you can get for it.
+
+|                 Assignment                 | Number of points |
+|:------------------------------------------:|:----------------:|
+|        Assignment 1: Linear Algebra        |        33        |
+|   Assignment 2: Gene expression analysis   |        33        |
+| Assignment 3: Principal Component Analysis |        34        |
+|          Assignment 4: Clustering          |        34        |
+|        Assignment 5: Classification        |        33        |
+|             Assignment 6: ASCA             |        33        |
+|                   Total                    |       200        |
+
+It is crucial for our graders to understand what you have done and why. Please elaborate in the supplied text boxes below each question what your reasoning is for making a certain step. To make your plots eligible for grading, you should add a clear x-axis label, y-axis label and title, as well as a clear description of what you have done to make your plot. When writing your code in the code blocks, add comments clarifying what you are doing! You can do this by adding a hash tag ("\#") before the comment.
+
+### The Caldana data
+
+In this project we will use a dataset produced by Caldana et al. (2011). The paper can be found on Canvas, and we highly recommend you to read it before starting the project. You don't need to understand all parts of the paper, but it's important to focus on the experimental design, the computational methods used, and the biology so you can understand your own results better.
+
+The Caldana et al. (2011) paper describes an experiment where *Arabidopsis thaliana* plants were grown under normal temperature (21$^\circ$C) and light conditions (150 $\mu$E) (see figure 1). After some time, they were moved to a different temperature and/or light condition. The conditions are as follows: the base condition (encoded 21-L), 21 $^\circ$C and bright light (21-HL), 32 $^\circ$C and normal light (32-L), 4 $^\circ$C and low light (4-L), 21 $^\circ$C and low light (21-LL), 4 $^\circ$C in the dark (4-D), 21 $^\circ$C in the dark (21-D) and 32 $^\circ$C in the dark (32-D). At every timepoint, the rosetta leaves of six new plants were sampled for transcriptomics and metabolomics analysis. This way the adaptation of the plants to the new conditions could be tracked. Samples were taken at 18 timepoints: 20, 40, ..., 360 minutes (and the control timepoint 0).
+
+```{r, echo=FALSE,out.width="100%",out.height="100%",fig.show='hold',fig.align='center', fig.cap="Overview of the experimental design as described in Caldana et al. (2011). Arabidopsis thaliana plants were grown under normal temperature (21 degrees) and light conditions (150 uE). After some time, they were moved to a different temperature and/or light condition. The conditions are as follows: the base condition (encoded 21-L), 21 degrees and bright light (21-HL), 32 degrees and normal light (32-L), 4 degrees and low light (4-L), 21 degrees and low light (21-LL), 4 degrees in the dark (4-D), 21 degrees in the dark (21-D) and 32 degrees in the dark (32-D). At every timepoint, the rosetta leaves of six new plants were samples for transcriptomics and metabolomics analysis. This way the adaptation of the plants to the new conditions could be tracked. Samples were taken at 18 timepoints."}
+knitr::include_graphics("./new experimental design.png")
+```
+
+Data have been obtained on 92 metabolites and 15047 unique genes. In total, samples for 8 conditions x 18 timepoints were measured, plus the baseline condition at timepoint 0. The replicates were summarized per condition-timepoint combination. Both datasets have been transformed to a log-scale as well. In the further project description, we will refer to the condition-timepoint combinations as "samples". Also note that the 21-L samples are from the plants being kept at the baseline condition throughout.
+
+During the project we will work a lot with R markdown coding blocks such as the one below. These are intended for you to use to complete the assignments. During knitting, these code blocks will automatically be run and printed in your output document. If you have any comments to give on what you have done, there are text blocks below each code block where you can elaborate.
+
+The metabolomics and expression data are supplied in two files in ./Data/ in your unzipped BDA project folder. As your first step in understanding this data, we will load it into R for you and show you what the tables look like. We leave the rest of the exploration to you.
+
+```{r Data importing, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+df_metabolomics = read.csv("./Data/Caldana_et_al_metabolomics_dataset.csv")
+df_expression = read.csv("./Data/Caldana_et_al_expression_dataset.csv")
+```
+
+```{r metabolomics data example, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+df_metabolomics[1:4, c(2,3,6,7,8)]
+```
+
+Above, a table is shown of a part of the metabolomics dataset. You can see some values for every metabolite: Alanine, Arabinose and Arabitol. Additionally, you can see the condition of the sample, in this case 21-D, meaning the plant was at 21 degrees in the dark. The timepoint is also shown. Every value that you see is the log2 of the area under the peak of the MS spectrum for that metabolite in that sample, which reflects the amount of that metabolite. If you're interested in how that works, we recommend searching the internet for "GC-MS metabolite quantification". You do not need to know how GC-MS works for our questions and exam.
+
+```{r expression data example, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+print(df_expression[1:4, 2:7])
+```
+
+Here a table is shown of a part of the gene expression dataset. You can see some values for some Arabidopsis thaliana genes: AT2G26550, AT2G26570, AT2G26580, and AT2G26360. When you look up these genes on [TAIR](https://www.arabidopsis.org/index.jsp), you can see that they encode a haeme oxygenase-like protein, a coiled-coil protein that moves chloroplasts, a transcription factor and an unnamed protein, respectively. As before, you can see the condition and time combination for the sample as well. Every value that you see is a normalized microarray intensity value, which reflects the transcript abundance of that gene in the sample.
+
+### Plant conditions to compare
+
+During the assignments, you will often be asked to compare two plant conditions (see Figure 1). Please discuss which two conditions you want to compare consistently throughout your project, and state them below in the code block. An example choice is given. Use the supplied text box to explain why you want to investigate these two conditions.
+
+```{r condition choice, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+condition1 = "32-L"
+condition2 = "32-D"
+```
+
+#### Explain your choice here.
+
+Because after reading the 2011paper, I've known that the temperature, light,and duration of treatment play the significant roles in the time-resolved response of Arabidopsis thaliana at the transcriptome and metabolome level.High temperature and darkness have a synergistic effect.I would like to narraw the scope down,to explore the effect of different light treatment's effect on transcriptome and metabolome level of Arabidopsis thaliana.
+
+#### End of text block.
+
+### Help
+
+As any programmer will tell you, looking stuff up on Google is a major part of any project. Hence looking up specific R programming questions may be helpful in progressing in your project assignments. Coding websites such as [StackOverflow](https://stackoverflow.com/) are particularly helpful.
+
+Specific questions on how functions work in R can be answered using the R documentation. Say you want to understand how you can run the singular value decomposition function svd(). On the right side of your screen you can find a "help" tab where you can search for the function that you want to use. You can type "svd" in the search field there to reach the documentation of the svd() function. Additionally, you can type "?svd" in your console window at the bottom of your screen to automatically search for the documentation of your supplied function.
+
+This project is a new addition to the BDA course, and will replace the R test from previous years. If you have done BDA in previous years, the rules and regulations regarding grades and exemptions are the same as they used to be for the R test. If you have passed the R-test last year, you do not have to hand in the project assignments again this year. If you have failed the R-test last year, you will need to do the project this year instead.
+
+If things are unclear to you or you have any other question, feel free to ask any of your lecturers or teaching assistants (TAs):\
+- Johan Westerhuis (Course coordinator, [j.a.westerhuis\@uva.nl](mailto:j.a.westerhuis@uva.nl){.email})\
+- Anna Heintz Buschart (Lecturer, [a.u.s.heintzbuschart\@uva.nl](mailto:a.u.s.heintzbuschart@uva.nl){.email})\
+- Roel van der Ploeg (Project coordinator, [g.r.ploeg\@uva.nl](mailto:g.r.ploeg@uva.nl){.email})\
+- Archontis Goumagias (TA, [a.goumagias\@student.vu.nl](mailto:a.goumagias@student.vu.nl){.email})\
+- Lucas Jansen (TA, [l.s.jansen\@student.vu.nl](mailto:l.s.jansen@student.vu.nl){.email})\
+- Alex van Kaam (TA, [a.t.van.kaam\@student.vu.nl](mailto:a.t.van.kaam@student.vu.nl){.email})\
+
+## Assignments
+
+Below are the packages we will use throughout the course. Do not edit this code block!
+
+```{r load packages, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE, warning=FALSE}
+
+if(!"umap" %in% installed.packages()[,1]){
+  install.packages("umap")
+}
+
+if(!"MASS" %in% installed.packages()[,1]){
+  install.packages("MASS")
+}
+
+if(!"gtools" %in% installed.packages()[,1]){
+  install.packages("gtools")
+}
+
+if(!"stringr" %in% installed.packages()[,1]){
+  install.packages("stringr")
+}
+
+library(umap)
+library(MASS)
+library(gtools)
+library(stringr)
+source("./heatmap.2a.R")
+```
+
+### Assignment 1: Linear Algebra (Johan Westerhuis, 09-01-2023)
+
+In this assignment, you will start your exploration of the data by checking various summaries per row and per column of your data tables. You will also make a few histograms and inspect them to check the comparability of our samples and variables. Finally you will center and scale your data for use in the other assignments.
+
+A)  Import both datasets. You will see that the first column is full of sample names. Change the import code so it automatically uses that column as the row names. (Hint: use read.csv(), use the row.names argument to specify the column. Type "?read.csv" in your console window for more info.) **[1 point]**
+
+```{r Assignment 1A, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+a = read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_expression_dataset.csv')
+b = read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_metabolomics_dataset.csv')
+# a = read.csv('')
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+B)  Create a version of both datasets that only contains numerical data. That means you need to remove the "condition" and "time" columns. **[1 point]**
+
+```{r Assignment 1B, include=TRUE, eval=TRUE, echo=TRUE}
+G<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_expression_dataset.csv',row.names = 1)
+G_num = G[,-1:-2]
+M<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_metabolomics_dataset.csv',row.names = 1)
+M_num=M[,-1:-2]
+#The row.names = 1 argument indicates that the first column of the CSV file should be used as the row names of the resulting data frame.
+```
+
+#### Put any text you may want to type here.
+
+Delete the 2nd and 3rd columns,rows remain unchanged.
+
+#### End of text block.
+
+C)  Calculate the total amounts per row and per column of both datasets. Use your numerical-only datasets for this. Plot the row and column sums in a histogram per dataset. What do the plots indicate about the comparability of the samples and variables? (Hint: you can use rowSums() and colSums() for this.) **[10 points]**
+
+```{r Assignment 1C, include=TRUE, eval=TRUE, echo=TRUE}
+G<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_expression_dataset.csv',row.names = 1)
+G_num = G[,-1:-2]
+M<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_metabolomics_dataset.csv',row.names = 1)
+M_num=M[,-1:-2]
+G_row_sum = rowSums(G_num)
+#G_row_sum = rowSums(G_num)
+hist(G_row_sum)
+#hist(G_row_sum)
+G_col_sum = colSums(G_num)
+hist(G_col_sum)
+M_row_sum = rowSums(M_num)
+hist(M_row_sum)
+M_col_sum = colSums(M_num)
+hist(M_col_sum)
+
+```
+
+#### Write down your observations here.
+
+G-gene expression M-metabolomics What do the plots indicate about the comparability of the samples and variables? In the terms of the sum of rows in G plot,the different sum of row in different conditions such as 21-D, 21-L indicates under different samples, the transcript abundance in certain gene in that sample is different. As for the sum of cols in G plot,it indicates,samples are not considered,the differents variable(genes) have different transcript abundance. In the terms of the sum of rows in M plot,the different sum of row in different conditions such as 21-D, 21-L indicates under different samples, the total amount of the sum of the different metabolites in that sample is different. As for the sum of cols in M plot,it indicates,samples are not considered,the different metabolites have different amounts in certain variables(metabolite) .
+
+#### End of text block.
+
+D)  Calculate the column mean and column standard deviation for each dataset. Make a histogram of your means and a histogram of your standard deviations for each dataset. Explain what the histograms describe in terms of comparability of the variables. (Hint: you can use apply() to calculate the mean and standard deviations per column.) **[10 points]**
+
+```{r Assignment 1D, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+G<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_expression_dataset.csv',row.names = 1)
+G_num = G[,-1:-2]
+M<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_metabolomics_dataset.csv',row.names = 1)
+M_num=M[,-1:-2]
+G_col_mean=apply(G_num,2,mean)
+#G_col_mean = apply(G_num,2,mean)
+hist(G_col_mean)
+G_col_SD=apply(G_num,2,sd)
+#G_col_SD
+hist(G_col_SD)
+M_col_mean=apply(M_num,2,mean)
+hist(M_col_mean)
+M_col_SD=apply(M_num,2,sd)
+#M_col_SD
+hist(M_col_SD)
+
+
+
+
+```
+
+#### Put any text you may want to type here.
+
+[The histograms indicate that even the means of datasets are close, the standard deviations of them have big differences. A low standard deviation of datasets indicates that the values of samples tend to be close to the mean of the set, while a high standard deviation indicates that the values are spread out over a wider range.]{.underline}
+
+End of text block.
+
+E)  Extract the amount of Glycine for the metabolomics 21-L samples for all timepoints. Save it in a variable. Plot the amount of Glycine over time in the input data, after you centered your variable, and after you centered & scaled your variable. Check what has happened to the mean and the standard deviation of your variable in each case. Explain what centering and/or scaling does to your data. **[7 points]**
+
+```{r Assignment 1E, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+M<-read.csv('~/Desktop/BDA project 2022-2023/Data/Caldana_et_al_metabolomics_dataset.csv',row.names = 1)
+#M_num=M[,-1:-2]
+#M_21L=M[M$condition=="21-L",]
+#M_21L=M[,c('time','Glycine')]
+M_21L=M[M$condition == "21-L", c("time", "Glycine")]
+#M_21L = M[M$condition=="",c("","")]
+#M_21L
+M_1=scale(M_21L,center = TRUE , scale = FALSE)
+plot(M_1,ylim = c(-2,2))
+M_2=scale(M_21L,center = TRUE , scale = TRUE)
+plot(M_2,ylim = c(-2,2))
+
+```
+
+#### Put any text you may want to type here.
+
+To eliminate the effect of unit and scale differences between features in order to treat each dimensional feature equally, the features need to be normalized. The centering means subtracting the column means of `x` from their corresponding columns, and scaling is done by dividing the (centered) columns of `x` by their standard deviations if `center` is `TRUE`, and the root mean square otherwise. If `scale` is `FALSE`, no scaling is done.
+"center = TRUE" specifies that the data should be centered by subtracting the mean of each column from each value in that column. This means that the resulting standardized data will have a mean of 0 for each column.
+"scale = TRUE" specifies that the centered data should also be scaled by dividing each value in a column by the standard deviation of that column. This means that the resulting standardized data will have a standard deviation of 1 for each column.
+
+\
+\
+End of text block.
+
+F)  Create a centered version of both datasets. You can do this by removing the column mean from every column. (Hint: consider using the sweep() function, you can use the means you have calculated in Assignment 1D for this.) **[2 points]**
+
+```{r Assignment 1F, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+G_centered=sweep(G_num,2,G_col_mean,FUN = "-")
+#G_centered = sweep(G_num,2,G_col_mean,FUN="-")
+M_centered=sweep(M_num,2,M_col_mean,FUN = "-")
+
+```
+
+G)  Create a centered & scaled version of both datasets. You can do this by dividing a centered column by its standard deviation. This is also known as autoscaling. (Hint: consider using the sweep() function, you can use the standard deviations you have calculated in Assignment 1D for this.) **[2 points]**
+
+**Note**: You have created new versions of the gene expression and metabolomics datasets. In the rest of the assignments we expect you to select the appropriate version of a dataset to use for a given method.
+
+```{r Assignment 1G, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+G_cen_scaled = sweep(G_centered,2,G_col_SD,FUN = "/")
+#G_cen_scaled
+M_cen_scaled = sweep(M_centered,2,M_col_SD,FUN = "/")
+#M_cen_scaled
+```
+
+#### Put any text you may want to type here.
+
+Through standardization each variable will have zero mean and unit standard deviation.End of text block.
+
+\
+**This concludes Assignment 1. Make sure you save your .Rmd file and workspace so you can continue in your next project session.**
+
+### Assignment 2: Gene expression analysis (Douwe Molenaar, 12-01-2023)
+
+In this assignment we will consider the gene expression data without centering or scaling it. We will perform a differential expression analysis to compare your two chosen plant conditions. While we ask you to do this using t-tests, please be aware that this is not really appropriate given the experimental design of the study. This is because the data points are not randomly drawn from a population, as they come from a time series.
+
+A)  Perform a t-test of the expression of AT2G20560 between your two chosen conditions. What does this p-value mean? Is this gene differentially expressed between your two conditions? **[4 points]**
+
+```{r Assignment 2A, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+condition1_G = G[G$condition=="32-L", c("AT2G20560")]
+#M_21L=M[M$condition == "21-L", c("time", "Glycine")]
+#condition1_G
+condition2_G = G[G$condition=="32-D", c("AT2G20560")]
+#condition2_G
+t.test(condition1_G,condition2_G)
+#t.test(1,2)
+```
+
+#### Put any text you may want to type here.
+
+Answer:
+
+[This p-value means the probability obtaining test results of the expression of this gene]{.underline}
+
+[at least as extreme as the result actually does, under the assumption that the null hypothesis is correct. P]{.underline}\>0.05, H0 was accepted and there was no significant difference between the two conditions in this gene expressed.
+
+End of text block.
+
+B)  Perform a t-test for every gene in the gene expression dataset for your chosen conditions. Collect the p-values in a vector. (Hint: consider using apply() or sapply().) **[3 points]**
+
+```{r Assignment 2B, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+everyg = G[G$condition %in% c("32-L","32-D"),]
+condition_everyg =everyg[,-1:-2]
+#condition_everyg
+everyg_pvalue=apply(condition_everyg,2,function(x) t.test(x[1:18],x[19:36],paired = F)$p.value)
+
+
+
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+C)  Make a histogram of all the p-values. Explain what the outcome means for the significance of your t-tests between your two chosen conditions. Is it possible for a gene to not be differentially expressed, and to still have a low p-value? **[5 points]**
+
+```{r Assignment 2C, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+hist(everyg_pvalue)
+```
+
+#### Put any text you may want to type here.
+
+Answer: It is possible for a gene to not be differentially expressed, and still have a low p-value. Because the variance estimates can be skewed by genes having a very high variance. These genes are associated to a large t-statistic and falsely selected as differentially expressed.
+it is important to note that a low p-value does not necessarily mean that a gene is differentially expressed. For example, multiple testing correction methods can lead to lower p-values for individual genes in a dataset, even if they are not actually differentially expressed. Additionally, technical variation or other confounding factors can sometimes lead to low p-values for genes that are not truly differentially expressed.
+
+#### End of text block.
+
+D)  In your exercises on RNAseq data analysis, you have computed the log(ratio) of gene expression using the total RNA counts of a gene between two conditions. Our gene expression data is already normalized and log transformed, so we can instead calculate the fold change using the averages between the two conditions.\
+    Calculate the fold change (FC) of AT2G20560 between your two chosen conditions. This means that you need to determine the mean of AT2G20560 in each condition separately. You can then subtract the mean of AT2G20560 in condition 2 from the mean of AT2G20560 in condition 1. **[3 points]**
+
+```{r Assignment 2D, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#condition1_G_mean=apply(array, margin, ...)apply(M_num,2,mean)
+#a=t.test(condition1_G,condition2_G)$"mean of x"
+
+condition1_G = G[G$condition=="32-L", c("AT2G20560")]
+condition1_G_mean = mean(condition1_G)
+#M_21L=M[M$condition == "21-L", c("time", "Glycine")]
+#condition1_G_mean
+condition2_G = G[G$condition=="32-D", c("AT2G20560")]
+condition2_G_mean = mean(condition2_G)
+#condition2_G_mean
+FC_20560 = condition1_G_mean - condition2_G_mean
+FC_20560
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+E)  Calculate the fold change of all genes between your two chosen conditions this way. **[3 points]**
+
+```{r Assignment 2E, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+condition_everyg_1 = G[G$condition %in% c("32-L"),]
+condition_everyg_1 = condition_everyg_1[,-1:-2]
+
+condition1_G_mean = apply(condition_everyg_1,2,mean)
+#condition1_G_mean
+condition_everyg_2 = G[G$condition %in% c("32-D"),]
+condition_everyg_2 = condition_everyg_2[,-1:-2]
+
+
+condition2_G_mean = apply(condition_everyg_2,2,mean)
+#condition2_G_mean
+
+
+FDall = condition1_G_mean - condition2_G_mean
+
+#log2FoldChange
+
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+F)  Make a volcano plot using your FC and p-values for every gene. Interpret the result. Where are the important differentially expressed genes in this plot? Why? (Hint: to make a proper volcano plot you still need to do something to your p-values.) **[6 points]**
+
+```{r Assignment 2F, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+log_everyg_pvalue=-log10(everyg_pvalue)
+
+#plot(FDall,log_everyg_pvalue)
+
+par(mfrow=c(1,1))
+p05 = -log10(0.05)
+plot(FDall,log_everyg_pvalue)
+lines(x=c(-2.5,-2.5),y=c(p05,10),col='gray')
+lines(x=c(2.5,2.5),y=c(p05,10),col='gray')
+lines(x=c(-6,-1),y=c(p05,p05),col='gray')
+lines(x=c(1,4),y=c(p05,p05),col='gray')
+text( x = 3, y = p05+0.2, label = "P = 0.05")
+text (x=2, y = 25, label="FC = 2")  
+title('volcano plot')
+
+```
+
+#### Put any text you may want to type here.
+
+Answer:
+
+The significantly differentially expressed genes are the ones found in the upper-left and upper-right corners.The larger the absolute value of the horizontal coordinate, the greater the difference of the gene between the two subgroups; the larger the value of the vertical coordinate, the more significant the difference of the gene expression between the subgroups and the more reliable the results.
+
+#### End of text block.
+
+G)  As you may be aware, you have now done over 15.000 t-tests. As such, you will need to control for Type I error. In the exercises you did before the project part of today's computer practical you have calculated the FDR value for any p-value and plotted them. An easy function to obtain the FDR values is p.adjust(). Control the type I error of your p-values using a false discovery rate. **[2 points]**
+
+```{r Assignment 2G, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+q <- p.adjust(everyg_pvalue,"fdr")
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+H)  Find the genes that are differentially expressed by setting an "adjusted" p-value and FC threshold. Elaborate on your choice of threshold. What gene has the lowest "adjusted" p-value? What is its biological function? Does this result make sense given your choice of compared conditions? **[7 points]**
+
+```{r Assignment 2H, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+adjust_p = 0.05
+adjustFC = 2 
+# Assuming you have a vector of p-values called 'pvals'
+adjusted_pvals <- p.adjust(pvals, method = "fdr")
+# Assuming you have a vector of test statistics called 'test_stats'
+library(qvalue)
+qval <- qvalue(test_stats)$qvalue
+significant_genes <- which(qval < 0.05)
+# Assuming you have a vector of adjusted p-values called 'adj_pvals'
+min_pval_index <- which.min(adj_pvals)
+
+# Assuming you have a vector of gene IDs called 'gene_ids'
+min_pval_gene <- gene_ids[min_pval_index]
+
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+\
+**This concludes Assignment 2. Make sure you save your .Rmd file and workspace so you can continue in your next project session.**
+
+### Assignment 3: Principal Component Analysis (Age Smilde, 13-01-2023)
+
+During this Assignment, you will perform Principal Component Analysis on both the gene expression and metabolomics data containing all conditions. We will investigate groupings in the score plots, and have a look at important variables distinguishing your chosen conditions using the loadings.
+
+A)  Perform a principal component analysis on the gene expression data: Consider which version of the data from Assignment 1 you want to use. Make a score plot using the first and second principal component. Show the variance explained of each component in your plot labels. Add a legend to identify the colour for each condition. Does your plot show clear groups? What plant conditions does your PCA plot together in a group? Compare your plot with Figure 2 from the paper. (Hint: use the legend() function to clarify which colour belongs to which plant condition.) **[6 points]**
+
+```{r Assignment 3A, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+USV_G = svd(G_cen_scaled) 
+ssqtotal_G=sum(G_cen_scaled*G_cen_scaled)	
+T_G = USV_G$u %*% diag(USV_G$d) # Calculate score
+P_G <- USV_G$v                          # Loadings
+npc <- 10                           # Calculate 10 PCs
+ssq_G <- 0 * (1:npc)  # Initialize variable ssq
+#ssq
+
+for (i in 1:npc){                   # for loop to calculate sum of squares for each component
+  Xest_G  <- T_G[,i] %*% t(P_G[,i])
+  ssq_G[i] <- 100*sum(Xest_G*Xest_G)/ssqtotal_G
+}
+ssqcum_G = cumsum(ssq_G)                # calculate cumulative ssq
+PCA_G = data.frame(ssq=ssq_G,ssqtot=ssqcum_G)
+PCA_G
+plot(T_G[,1], T_G[,2],pch=17,col=as.numeric(as.factor(G$condition)))
+legend(100,120,c("4-D","4-L","21-L","21-D","32-L","32-D","21-LL","21-HL"),col=c(3,1,8,7,6,5,4,2),pch = 17)
+
+
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+B)  Perform a principal component analysis of the metabolomics data: Consider which version of the data you want to use. Make a score plot using the first and second principal component. Show the variance explained by each component in your plot labels. Add a legend to identify the colour for each condition. Does your plot show clear groups? What plant conditions does your PCA plot together in a group? (Hint: use SVD, consider centering and/or scaling your data for PCA specifically!) **[6 points]**\
+    \
+    **Note**: your result is likely different from the PCA shown in Figure 2 of the paper. This is because the authors have chosen to log2 transform and subsequently scale their metabolomics data to median 1 for every column. There is no clear "right" or "wrong" PCA here.
+
+```{r Assignment 3B, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+USV_M = svd(M_cen_scaled) 
+ssqtotal_M=sum(M_cen_scaled*M_cen_scaled)	
+
+
+T_M = USV_M$u %*% diag(USV_M$d) # Calculate score
+P_M <- USV_M$v                          # Loadings
+npc <- 10                           # Calculate 10 PCs
+ssq_M <- 0 * (1:npc)                  # Initialize variable ssq_M
+
+for (i in 1:npc){                   # for loop to calculate sum of squares for each component
+  Xest_M  <- T_M[,i] %*% t(P_M[,i])
+  ssq_M[i] <- 100*sum(Xest_M*Xest_M)/ssqtotal_M
+}
+ssqcum_M = cumsum(ssq_M)                # calculate cumulative ssq
+PCA_M = data.frame(ssq=ssq_M,ssqtot=ssqcum_M)
+PCA_M
+plot(T_M[,1], T_M[,2],pch=17,col=as.numeric(as.factor(M$condition)),xlab= "T1",ylab ="T2",xlim = c(-20,9),ylim = c(-13,12))
+legend(-20,10,c("4-D","4-L","21-L","21-D","32-L","32-D","21-LL","21-HL"),col=c(1:8),pch = 17)
+#T_M
+#P_M
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+C)  Consider your metabolomics score plot. Which of the first two principal components is best at separating your two chosen conditions? Plot the loadings of that component in a bar plot. Which metabolite is considered the most important? What is the biological role of this metabolite? Does this result make biological sense given your choice of compared conditions? **[4 points]**
+
+```{r Assignment 3C, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#P_M
+#barplot(P_M[,1])
+barplot(P_M[,2])
+MM = which.max(abs(P_M[,2]))
+MM # most important metabolite is Arabinose
+#P_M[,2]
+
+```
+
+#### Put any text you may want to type here.
+
+Answer:
+
+The second principal component is best at separating my two chosen conditions.
+
+Arabinose is considered the most important. the l-Ara commonly exists in plant as a fundamental element in plant cell walls and in other biochemically important molecules, it can assist in maintaining cell wall flexibility,PSY1 has also been identified as requiring arabinosylation for its function. PSY1 is a tyrosine sulfated, tri-arabinosylated glycopeptide that promotes cell expansion and proliferation in Arabidopsis (Amano et al. 2007). When wild-type Arabidopsis seedlings were supplied with exogenous PSY1, root length was significantly increased compared with the control.（Alban et al. 2021)
+
+The role of this metabolite seems to be irrelated to light condition.So this result don't make biological sense given my choice of compared conditions.
+
+End of text block.
+
+D)  Now consider your gene expression PCA model. Reconstruct your gene expression dataset using the first and second PCs. (Hint: consider the way a dataset is decomposed to reconstruct the data.) **[2 points]**
+
+```{r Assignment 3D, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#USV_G
+T_G <- USV_G$u %*% diag(USV_G$d)
+P = USV_G$v
+re_G <- T_G[,1:2] %*% t(P[,1:2])
+#re_G
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+E)  Calculate the residuals of your gene expression dataset by subtracting the reconstructed data from the input data. Inspect the residuals. Report the condition and timepoint that was modeled most poorly. How much worse is it modeled than the average? **[4 points]**
+
+```{r Assignment 3E, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#G_cen_scaled
+E_G = G_cen_scaled -  re_G
+E_G = as.matrix(E_G)
+#E_G
+
+res_row = abs(rowSums(E_G%*% t(E_G)))
+res_col = abs(colSums(t(E_G) %*% E_G))
+#res_col
+which.max(res_row)
+which.max(res_col)
+barplot(res_row,main = "residuals per Individual")
+barplot(res_col,main = "residuals per Variable")
+```
+
+#### Put any text you may want to type here.
+
+#### Answer:
+
+#### the condition and timepoint that was modeled most poorly is 21-HL-220.
+
+#### End of text block.
+
+F)  Use your reconstructed gene expression data to calculate the variance explained per gene of the entire gene expression PCA model. You can do this by dividing the sum of squares of your reconstructed gene by the sum of squares of the gene in your input data. Which gene was modeled the best? What is its biological role? Does this result make biological sense given your choice of compared conditions? (Hint: consider using a colSums() approach.) **[2 points]**
+
+```{r Assignment 3F, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+G_SST = sum(re_G*re_G)
+G_varexplained = 100*((G_SST- res_col) /G_SST)
+which.max(G_varexplained)
+```
+
+#### Put any text you may want to type here.
+
+The gene AT4G00860 was modeled the best.
+
+#### End of text block.
+
+G)  Consider which principal component of the gene expression PCA best separates your chosen conditions. Check its loading. Which genes are considered important? Compare your result with the set of most differentially expressed genes from Assignment 2. What similarities and differences do you find? **[4 points]**
+
+```{r Assignment 3G, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+G_32 =as.matrix( G[G$condition %in% c("32-L","32-D")])
+G_32_cen_scaled = scale(G_32,center = TRUE, scale = TRUE)
+USV_G_32 = svd(G_32_cen_scaled) 
+ssqtotal_G_32=sum(G_32_cen_scaled*G_32_cen_scaled)	
+T_G_32 = USV_G_32$u %*% diag(USV_G_32$d) # Calculate score
+P_G_32 <- USV_G_32$v                          # Loadings
+npc <- 10                           # Calculate 10 PCs
+ssq_32 <- 0 * (1:npc)  # Initialize variable ssq
+#ssq
+
+for (i in 1:npc){                   # for loop to calculate sum of squares for each component
+  Xest_32  <- T_G_32[,i] %*% t(P_G_32[,i])
+  ssq_32[i] <- 100*sum(Xest_32*Xest_32)/ssqtotal_G_32
+}
+ssqcum_32 = cumsum(ssq_32)                # calculate cumulative ssq
+PCA_G_32 = data.frame(ssq=ssq_32,ssqtot=ssqcum_32)
+plot(T_G_32[,1], T_G_32[,2],pch=17,col=c(6,5),xlab= "T1",ylab ="T2")
+legend(60,40,c("32-L","32-D"),col=c(6,5),pch = 17)
+
+plot(P_G_32[,1],P_G_32[,2],col=c(6,5),xlim = c(-0.04,0.04))
+legend(0.03,0.03,c("32-L","32-D"),col=c(6,5),pch = 17)
+
+```
+
+#### Put any text you may want to type here.
+
+Answer:
+
+T1 performs better at separating my chosen conditions.
+
+#### End of text block.
+
+H)  Why would the selected genes from differential expression analysis and PCA be different? Explain what the goal is of both methods and thus what it means that a variable is selected in either method. **[6 points]**
+
+```{r Assignment 3H, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+
+```
+
+#### Put any text you may want to type here.
+
+In differential expression analysis, the unequal variance assumption gives a T-test less power because, with the same data, we now have to estimate two different instead of one common standard deviation. The T-test which measured the mean values and standard variance in gene level at two different conditions to make a prediction. Because of the cut-off p-value we applied, there might be have a Type I or II error which can not be ignored.
+
+In bio analysis, the measured data is very large, PCA reduces large data matrices into smaller ones and it extracts most important factors from data which can describe multivariate interactions between the measured variables.
+
+End of text block.
+
+\
+**That concludes week 1 of the project! Please hand in your .rmd and .pdf files on Canvas for your pass/fail grade and feedback. The week 1 deadline is Monday, January 16th 11:00.**
+
+### Assignment 4: Clustering (Johan Westerhuis, 16-01-2023)
+
+In this assignment, you will focus on clustering your gene expression and metabolomics data. This will be done using hierarchical clustering and UMAP methods. You will also inspect the validity of the clustering results and compare it with the Caldana paper.\
+
+In the code block below, some functions are defined for you to use in subsequent questions. You do not need to understand what happens in this code. Do not edit the code block!
+
+```{r Assignment 4 functions, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+conditions = unique(df_expression$condition)
+colours = c("grey", "black", "cyan", "blue", "orange", "red", "green", "yellow")
+
+plot_hclust = function(hclust_result){
+  dendrogram = dendrapply(as.dendrogram(hclust_result), labelCol)
+  plot(dendrogram)
+}
+
+labelCol <- function(x) {
+  if (is.leaf(x)) {
+    
+    ## fetch label
+    label = attr(x, "label") 
+    
+    ## extract condition
+    condition = str_split_fixed(label, "_", 2)[,1]
+    
+    ## set label color
+    index = which(conditions == condition)
+    attr(x, "nodePar") = list(lab.col = colours[index])
+  }
+  return(x)
+}
+
+make_heatmap = function(data, condition1, condition2){
+  referenceSample = data[(data$condition == "21-L") & (data$time == 0), 3:94]
+  data = data[data$condition %in% c(condition1, condition2),]
+  conditionLabels = data$condition
+  timepoints = data$time
+  data = sweep(data[,3:94], 2, as.numeric(referenceSample), FUN="-")
+  
+  selectMetabolites = as.data.frame(cbind(colnames(data), apply(abs(data), 2, mean)))
+  selectMetabolites = selectMetabolites[order(selectMetabolites[,2], decreasing=T),]
+  selectMetabolites = row.names(selectMetabolites)[1:20]
+  
+  reordering = order(factor(conditionLabels, levels=c(c(condition1, condition2))), timepoints)
+  data = data[reordering, colnames(data) %in% selectMetabolites]
+  conditionLabels = conditionLabels[reordering]
+  
+  data = t(data)
+  colColours = 1:ncol(data)
+
+  for(i in 1:ncol(data)){
+  sampleCondition = conditionLabels[i]
+  index = which(conditions == sampleCondition)
+  colColours[i] = colours[index]
+  }
+
+  heatmap.2a(as.matrix(data[,order(conditionLabels)]), scale="row", hclustfun=function(x){hclust(x,method="average")}, Colv=FALSE, breaks=48, col=colorRampPalette(c("red", "white", "blue"), bias=0.75, space="rgb"), trace="none", dendrogram="row", ColSideColors=colColours)
+}
+```
+
+A)  Calculate the euclidean distances between the samples in the gene expression data (consider which version of the data you wish to use). Then, use the distance matrix to create a hierarchical clustering using average linkage. Plot the hierarchical clustering using the plot_hclust() function defined in the code block above. An example of how you can run this custom function is given in the code block below. Compare your result with Figure 3 from the paper. Do you find the same clusters as the paper? Describe what plant conditions the dendrogram clusters together. (Hint: check the dist() and hclust() function documentation.) **[7 points]**
+
+```{r Assignment 4A, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#G_num
+d_G = dist(G_num,method = "euclidean")
+#d_G
+hc_G = hclust(d_G, method = "average")
+#plot(hc_G)
+clusterCut <- cutree(hc_G, 3)
+
+
+plot(hc_G,col="black",col.main="pink",col.lab="pink",col.axis="pink",lwd=1,lty=1,sub="",cex=0.3,axes=FALSE,hang=-2)
+
+axis(side=2,at=seq(0,120,20),col="black",lwd=1,labels=FALSE)
+
+mtext(seq(0,120,20),side=2,at=seq(0,120,20),line=1,col="pink",las=2)
+```
+
+#### Put any text you may want to type here.
+
+I find the same clusters as the paper, such as at 32-D,32-L,4-D,4-L,21-L,21-HL,21-D,21-LL are clustered at the first 80 minutes, however, the individual conditions form separate and distinct clusters from a time point around 100min onward, are not intermingled with any other condition.These data are grouped into two main categories， 4-L ,4-D ,21-HL, 32-L,21-LL,21-L are clustered together; 32-D and 21-D are clustered together.
+
+End of text block.
+
+B)  Calculate the euclidean distances between the samples in the metabolomics data (consider which version of the data you wish to use). Use the distance matrix to create a hierarchical clustering using average linkage. Plot the hierarchical clustering using the plot_hclust() function. Compare your result with Figure 3 from the paper. Do you find the same clusters as the paper? Describe what plant conditions the dendrogram clusters together. **[7 points]**
+
+```{r Assignment 4B, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+#M_num
+d_M = dist(M_num,method = "euclidean")
+#d_M
+hc_M = hclust(d_M, method = "average")
+clusterCut <- cutree(hc_M, 3)
+plot(hc_M,col="black",col.main="pink",col.lab="pink",col.axis="pink",lwd=1,lty=1,sub="",cex=0.3,axes=FALSE,hang=-2)
+
+axis(side=2,at=seq(0,8,2),col="black",lwd=1,labels=FALSE)
+
+mtext(seq(0,8,2),side=2,at=seq(0,8,2),line=1,col="pink",las=2)
+```
+
+#### Put any text you may want to type here.
+
+I find the same clusters as the paper, such as at 4-D,4-L,21-L,21-HL,21-D,21-LL are clustered at the first 80 minutes, however, the individual conditions form separate and distinct clusters from a time point around 100min onward, are not intermingled with any other condition as same as the case of gene data.These data are grouped into two main categories,21-D 32-D ,4-D ,21-HL, 32-L,21-LL,21-L are clustered together; 4-L and 21-HL are clustered together.
+
+End of text block.
+
+C)  Compare the hierarchical clusterings of your metabolomics and gene expression data. Do they cluster in the same way? Explain what similarities and/or differences between the datasets could cause this result. **[6 points]**
+
+```{r Assignment 4C, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+```
+
+#### Put any text you may want to type here.
+
+When comparing metabolomics and gene expression data, they cluster conditions in different manner. The most typical example is co-clustering of the late stages of the 4-L and 21-HL at the metabolite level, however, this cannot be observed in the gene expression data, where rather the 4-L co-clusters with the 4-D and the 21-HL forms its own independent cluster.
+
+We can deduce that plants metabolites are sensitive to light changes, and gene expression is more sensitive to temperature changes. The early changes in the gene expression data are relevant to low temperature, whereas in the metabolomics data, it's relevant to high light.
+
+#### End of text block.
+
+D)  Execute the code block below. Don't edit it! This creates a heatmap showing only the 20 metabolites whose mean abundance in your chosen conditions differs the most from the control sample (21-L timepoint 0). Compare the result with figure 1 from the paper. Can you see a clear difference in metabolite abundance between your two chosen conditions? Check the biological role of the selected metabolites. Does the selection of metabolites make biological sense given your choice of two conditions to compare? **[6 points]**
+
+```{r Assignment 4D, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+rm(T)
+df_metabolomics_heatmap <- read.csv("./Data/Caldana_et_al_metabolomics_dataset.csv")
+df_metabolomics_heatmap <- df_metabolomics_heatmap[,2:95]
+make_heatmap(df_metabolomics_heatmap, condition1, condition2)
+
+```
+
+#### Put any text you may want to type here.
+
+The metabolites have significance role in chosen conditions.
+
+1.Tyrosine: Tyrosine is an essential aromatic amino acid required for the synthesis of proteins and a diverse array of plant natural products(Timoneda et al. 2018)
+
+2\. Leucine: Leucine-rich repeat proteins feature tandem leucine-rich motifs that form a protein--protein interaction domain. Plants contain diverse classes of LRR proteins, many of which take part in signal transduction (Matsushima and Miyashita 2012).
+
+3\. Isoleucine: Isoleucine and eucine and valine share four common enzymes in their biosynthesis pathways and thus are coordinately regulated. Induction of free amino acids as osmolytes in response to abiotic stress is thought to play a role in plant stress tolerance(Joshi et al. 2010).
+
+4\. Lysine：Lysine is a nutritionally important essential amino acid, whose synthesis in plants is strongly regulated by the rate of its synthesis. Being a basic amino acid, lysine may participate in the regulation of cellular pH, which is known to be an important regulatory signal in plants. In addition, lysine may also serve by itself as a direct regulatory signal in plants（Stepansky et al. 2006).
+
+5\. Uracil: Uracil is used in plants to help carry out the synthesis of many enzymes necessary for cell function through bonding with riboses and phosphates. (From Wekipedia).
+
+6.Alanine: The non-proteinogenic amino acid β-alanine has important roles in plant physiology and metabolism, directly as a defense compound that enables plants to withstand various stresses such as hypoxia, waterlogging and drought, and indirectly as a precursor to the compounds pantothenate and CoA(Parthasarathy et al. 2019).
+
+7.Succinic.acid: Some researches provide the explanation for the plant growth promoting effects of some rhizobacteria; the bacteria may secrete organic acids, such as succinic and lactic acids, and these acids may increase plant growth under conditions in which the populations of pathogens are reduced( Masami et al. 1993).
+
+8.Glucose: Glucose is used by plants for energy and to make other substances like cellulose and starch. Glucose can be used as a substrate and broken down in plant cells by the process of respiration. The chemical energy released by respiration can be used by the plant for cellular activities such as protein synthesis or cell division(cite from<https://www.bbc.co.uk/bitesize/guides/z23ggk7/revision/8>).
+
+9.Fructose: Fructose functions as a regulatory sugar metabolite and interacts with signaling by the plant hormones abscisic acid(Cho YH and Yoo SD 2011).
+
+End of text block.
+
+E)  Create a UMAP of both datasets. Supply the custom.config as argument to the umap() function when running it. Select an appropriate number of neighbors. Plot the result. Add a legend to identify the colour for each condition. Does UMAP find the same kind of clusters as the hierarchical clustering or the PCA? What can you say about the metabolites that are important for the UMAP clustering? **[8 points]**
+
+```{r Assignment 4E, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+custom.config = umap.defaults
+custom.config$random_state = 123
+G.umap = umap(G_num,custom.config,n_neighbors=10)
+#G.umap
+Y=G$condition
+Y_updated= as.factor(Y)
+#Y_updated
+#class(Y_updated)
+Y_final = as.numeric(Y_updated)
+#Y_final
+plot(G.umap$layout[,1],G.umap$layout[,2],col=Y_final)
+legend(2.5,6,c("4-D","4-L","21-L","21-D","32-L","32-D","21-LL","21-HL"),col=1:8,pch = 1)
+
+M.umap = umap(M_num,custom.config,n_neighbors=15)
+#G.umap
+plot(M.umap$layout[,1],G.umap$layout[,2],col=Y_final)
+legend(1.5,4.5,c("4-D","4-L","21-L","21-D","32-L","32-D","21-LL","21-HL"),col=1:8,pch = 1)
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+\
+**This concludes Assignment 4. Make sure you save your .Rmd file and workspace so you can continue in your next project session.**
+
+### Assignment 5: Classification (Johan Westerhuis, 19-01-2023)
+
+In this assignment we will use the LDA and PCDA methods to find the metabolites that best discriminate between your two chosen conditions.\
+
+A)  Make a reduced metabolomics dataset by selecting only the samples of your two chosen conditions. If one of your conditions is "21-L", remove the 21-L sample of timepoint 0 to balance your groups. Create a vector of binary values encoding the condition of each sample (0 = condition1 and 1 = condition2). (Hint: consider recentering and/or rescaling the reduced dataset.) **[5 points]**
+
+```{r Assignment 5A, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+Sample_1=M[M$condition %in% c("32-L","32-D"),]
+#Sample_1
+Sample_1 = Sample_1[Sample_1$time != 0, ]
+#Sample_1
+Data_vector = Sample_1$condition
+#Data_vector
+Data_vector = as.factor(Data_vector)
+Data_vector = as.numeric(Data_vector)
+Data_vector = c(Data_vector)-1
+#Data_vector
+
+Sample_1 = Sample_1[,-1:-2]
+re_col_m = colMeans(Sample_1) # calculates reduced data's column means
+#re_col_m
+XM = sweep(Sample_1,2,re_col_m,FUN="-") 
+XM = as.matrix(XM)
+SD = apply(Sample_1,2,sd)
+reM_cen_scaled = sweep(XM,2,SD,FUN = "/")
+#reM_cen_scaled
+#apply(Sample_1[1:4], 2, sd) 
+#solution2:c = scale(Sample_1,center = TRUE, scal = TRUE)
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+B)  Perform a linear discriminant analysis on your new metabolomics dataset, using your new vector of binary values as the class of each sample. **[2 points]**
+
+```{r Assignment 5B, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+reslda = lda(XM,Data_vector)
+reslda
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+C)  You should have gotten a warning from your LDA function stating that the variables in the reduced dataset are collinear. What does this warning mean? Do you think you have created a valid model? If so, analyse it for important metabolites. If not, explain why the model is not valid. **[6 points]**
+
+```{r Assignment 5C, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+
+```
+
+#### Put any text you may want to type here.
+
+Answer:
+
+"Collinearity is a problem both for regression and for classification when standard methods are applied. In both cases, this is related to instability of information along the small eigenvector directions.If the relevant information is gathered in the"larger eigenvectors", the problem can be solved by using only the first few components from the covariance matrix. This is true for both regression and classification.If, however, this is not the case, this approach will give poor results. For regression, such directions will always be difficult to handle, but for discriminant analysis they can be handled if used properly. If the "small eigenvector" space is handled as the orthogonal compliment of the "larger eigenvectors" and if a Euclidean distance is used instead of the Mahalanobis distance, the problem can be solved"(Tormod and Bjørn, 2001).
+
+I think the model is still valid.
+
+One of the simplest ways that the collinearity problem is solved in practice is" by the use of principal component regression (PCR). Experience has shown that this usually gives much better results than LS (least squares regression) for prediction purposes"(Tormod and Bjørn, 2001).
+
+#### End of text block.
+
+D)  Make a principal component analysis of your reduced metabolomics dataset. Only consider 2 components. Show the amount of variance explained per component in the plot labels. Add a legend to identify the colour for each condition. Does your PCA model separate your two chosen conditions well? (Hint: use svd(). Consider recentering and/or rescaling your data for PCA specifically!) **[7 points]**
+
+```{r Assignment 5D, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+npc_5 = 2  # We will only use 2 PCs here
+SVD_5 <- svd(reM_cen_scaled, nu = npc_5, nv = npc_5)   # svd calculating only 2 components
+ssqtotal_5 = sum(reM_cen_scaled *reM_cen_scaled)
+T_5 = SVD_5$u %*% diag(SVD_5$d[1:npc_5])
+P_5 = SVD_5$v
+ssq_5 <- 0 * (1:npc) 
+for (i in 1:npc_5){
+  Xest_5 = T_5[,i] %*% t(P_5[,i])
+  ssq_5[i] = 100*sum(Xest_5*Xest_5)/ssqtotal_5
+}
+ssqum_5 = cumsum(ssq_5)
+PCA_5 = data.frame(ssq=ssq_5,ssqtot=ssqum_5)
+PCA_5
+
+plot(T_5[,1], T_5[,2],pch=17,col=c(6,5),xlab= "T1",ylab ="T2")
+legend(5,-5,c("32-L","32-D"),col=c(6,5),pch = 17)
+
+
+```
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+E)  Make a PCDA model using the PCA scores (from question D) for the discriminant analysis. Inspect the classifications of your samples. Does the model misclassify any of the samples? What is the most important metabolite that differentiates your two chosen conditions? **[9 points]**
+
+```{r Assignment 5E, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+reslda_pcda <- lda(x = T_5,Data_vector) # Now lda is applied on the PCA scores T_5
+#reslda_pcda 
+T_5
+which.max(abs(T_5))
+plot(reslda_pcda ,pch=17,col=c(0,1))
+d_pcda = reslda_pcda$scaling
+d0_pcda = -0.5*(reslda_pcda$means[2,] + reslda_pcda$means[1,]) %*% d_pcda 
+r_pcda = P_5%*%d_pcda 
+which.max(abs(T_5)) 
+apply(T_5,2,which.max)
+D_pcda = reM_cen_scaled %*% r_pcda 
+
+```
+
+#### Put any text you may want to type here.
+
+The most important metabolite that differentiates our two chosen conditions is Dehydroascorbic acid dimer.
+
+#### End of text block.
+
+F)  Compare your metabolomics PCDA result with your metabolomics PCA result (from assignment 3C). Do you find the same important metabolites? If you find any differences, why would the selected metabolites be different? **[5 points]**
+
+```{r Assignment 5F, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+```
+
+#### Put any text you may want to type here.
+
+The most important metabolites in PCDA and PCA are different.Both PCA and LDA aim to find a direction in multivariate space.PCA aims for maximum variance.LDA aims for best separation between groups.These directions can be similar but also be very different. However, in high dimensional data, LDA cannot be used,so in that case,we use PCA to reduce variables and perform LDA on scores.
+
+#### End of text block.
+
+\
+**This concludes Assignment 5. Make sure you save your .Rmd file and workspace so you can continue in your next project session.**
+
+### Assignment 6: ASCA (Age Smilde, 20-01-2023)
+
+In this assignment we want you to use the shiny app for ASCA with the Caldana et al. metabolomics data. To answer the questions below, just make a screenshot of your plot window and include it into the markdown as follows (see the .Rmd):
+
+```{=html}
+<!-- Ignore this line
+
+!["Figure caption"]("./path/to/figure.png") 
+
+Ignore this line -->
+```
+Open up the shiny app for ASCA using the DataTool.R script in the /Shiny App/ folder. From the /Data/ folder, load as your dataset the file "Data_for_ASCA.csv" and as your design file "Design_for_ASCA.csv". The Data_for_ASCA.csv file contains untransformed metabolomics data. We have selected only the 21-D, 21-L, 32-D, 32-L, 4-D and 4-L conditions for you to use in this assignment. There are 4 replicates present for every condition-timepoint combination. The Design_for_ASCA.csv file contains the time, temperature and light condition metadata for every sample. These are encoded as factors 1, 2 and 3, respectively.
+
+A)  Consider balancing, transforming, centering and/or scaling the data in the shiny app. Defend your choices. Inspect the PCA plots and change the point colours to light, time or temperature. Does the PCA model separate the different groups well? Which metabolites are important for this separation? Include screenshots of your score plot and biplot. **[7 points]**
+
+#### Include your screenshots here.
+
+![](images/6A%20score%20plot-01.png)
+
+![](images/6A%20biplot.png)
+
+#### End of screenshot block.
+
+#### Put any text you may want to type here.
+
+The PCA model separate the different groups well. Differentiate by lighting conditions, From the biplot, we can find Asparagie, GABA, uracil, beta.alanie,Tyrosine, Glutamate, Arabinose are closely related to dark condition, and Fumaric.acid, Sinapic.acid, Citramalate are related to light condition.\
+
+#### End of text block.
+
+B)  Go to the univariate plot window. Plot the metabolites that were important according to your metabolomics PCDA result from Assignment 5. Why do you think these metabolites were selected? Include a screenshot of your univariate plots. **[4 points]**
+
+#### Include your screenshots here.
+
+![](images/6B.png)
+
+#### End of screenshot block.
+
+\
+
+#### Put any text you may want to type here.
+
+Because these metabolites might regulated by light condition which might affect the growth of the plant.
+
+End of text block.
+
+C)  In the ASCA window of the shiny app, create a model using the factors time, light, and temperature. Do not consider interaction terms yet. Examine the model. Which metabolites are important in separating the different temperature conditions? Which metabolites are important in separating the different light conditions? Have you found these metabolites before using other methods? Include screenshots of your score plots and biplots. **[3 points]**
+
+#### Include your screenshots here.
+
+![](images/6C.png)
+
+#### End of screenshot block.
+
+\
+
+#### Put any text you may want to type here.
+
+Answer: Glycine, Methionine, Glutamine, Pyruvic.acid, Sucrose, Uracil, Succinic.acid are important in separating the different temperature conditions. I haven't found them.
+
+#### End of text block.
+
+D)  Use the "Combine terms" text field to create a new ASCA model considering a light factor term and an interaction term of light and temperature. Examine the model in the Combination plots window. Have a look at the levels plot. What is the overall behaviour of the metabolites between the different temperature conditions? Is the overall behaviour different for the light and dark samples? Include a screenshot of your levels plot. **[5 points]**
+
+#### Include your screenshots here.
+
+![](images/6D.png)
+
+#### End of screenshot block.
+
+\
+
+#### Put any text you may want to type here.
+
+In light sample , low temperature 4 explain least PC1, however, in dark sample, it behaves oppositely.
+
+Overall all plants grow in different temperatures make more higher contribution in PC1 than dark condition.
+
+#### End of text block.
+
+E)  In the ASCA window of the shiny app, use the "Combine terms" text field to create a new ASCA model considering a time factor term and an interaction term of time and **temperature**. Inspect the levels plot of the model. What is the overall behaviour of the metabolites over time? Is that behaviour different for the different temperature conditions? Include a screenshot of your levels plot. \*\*[5 points]\*\*
+
+#### Include your screenshots here.
+
+![](images/Screenshot%202023-01-23%20at%2007.02.39.png)
+
+#### End of screenshot block.
+
+With respect to the overall behaviour of the metabolites over time, the plot show an decreasing tendency , then it stays a steady state in 60 mins.At the first few time points, 20,40,60min, with the temperature changing from 21 to 32, their metabolites' contributions to PC1 is increasing, however, 4 is at middle level.\
+
+#### Put any text you may want to type here.
+
+#### End of text block.
+
+F)  Compare all of your "most important" metabolites from all of the methods you have applied. What are the similarities? What are the differences? What is causing some methods to produce different results? Which results are the most valid, in your opinion? Which results make the most biological sense? **[9 points]**
+
+```{r Assignment 6F, include=TRUE, eval=TRUE, echo=TRUE, message=FALSE}
+
+```
+
+#### Put any text you may want to type here.
+
+T-test compares variation between group means to variation within groups.T-test does not give an answer which group a sample belongs to.Both PCA and LDA aim to find a direction in multivariate space.
+
+PCA aims for maximum variance.
+
+LDA aims for best separation between groups.LDA finds direction (d) in variable space for which the variance within the groups (W) is small while the variance between the groups (B) is large.LDA is a multivariate extension of t-test.In high dimensional data (variables \> samples), W cannot be inverted. LDA cannot be used.
+
+These metabolites have function which play an role in metabolic mechanism of plant in TCA and respiration part. In my two chosen conditions, there are clearly difference of metabolites abundance in dark and light condition. In my opinion, PCDA and ASCA is most valid.PCDA combines PCA and LDA method, which can be used for discrimination (of two groups) in case of high dimensional data.,Crossvalidation can be used to estimate number of components for optimal class prediction. Arabinose make the most biological sense.the l-Ara commonly exists in plant as a fundamental element in plant cell walls and in other biochemically important molecules, it can assist in maintaining cell wall flexibility,PSY1 has also been identified as requiring arabinosylation for its function. PSY1 is a tyrosine sulfated, tri-arabinosylated glycopeptide that promotes cell expansion and proliferation in Arabidopsis (Amano et al. 2007). When wild-type Arabidopsis seedlings were supplied with exogenous PSY1, root length was significantly increased compared with the control.
+
+#### End of text block.
+
+**References**
+
+ 
+
+Alban Mariette, Hee Sung Kang, Joshua L Heazlewood, Staffan Persson, Berit Ebert, Edwin R Lampugnani(2021). Not Just a Simple Sugar: Arabinose Metabolism and Function in Plants, Plant and Cell Physiology, Volume 62, Issue 12,  Pages 1791--1812.
+
+ 
+
+Amano Y., Tsubouchi H., Shinohara H., Ogawa M. and Matsubayashi Y. (2007) Tyrosine-sulfated glycopeptide involved in cellular proliferation and expansion in Arabidopsis. Proc. Natl. Acad. Sci. 104: 18333--18338.doi: 10.1073/pnas.0706403104.
+
+ 
+
+Tormod, N. and Bjørn,M(2001).Understanding the collinearity problem in regression and discriminant analysis. Journal of Chemometrics,15,413-426.
+
+ 
+
+Timoneda, A., Sheehan, H., Feng, T. et al. Redirecting Primary Metabolism to Boost Production of Tyrosine-Derived Specialised Metabolites in Planta. Sci Rep 8, 17256 (2018).
+
+ 
+
+Matsushima N, Miyashita H. Leucine-Rich Repeat (LRR) Domains Containing Intervening Motifs in Plants. Biomolecules. 2012 Jun 22;2(2):288-311.
+
+ 
+
+Joshi V, Joung JG, Fei Z, Jander G. Interdependence of threonine, methionine and isoleucine metabolism in plants: accumulation and transcriptional regulation under abiotic stress. Amino Acids. 2010 Oct;39(4):933-47.
+
+ 
+
+Stepansky A, Less H, Angelovici R, Aharon R, Zhu X, Galili G. Lysine catabolism, an effective versatile regulator of lysine level in plants. Amino Acids. 2006 Mar;30(2):121-5.
+
+ 
+
+Parthasarathy A, Savka MA, Hudson AO. The Synthesis and Role of β-Alanine in Plants. Front Plant Sci. 2019 Jul 18;10:921.
+
+ 
+
+Masami Yoshikawa, Nobuhiro Hirai, Kohji Wakabayashi, Haruyuki Sugizaki, and Hajime Iwamura(1993). Succinic and lactic acids as plant growth promoting compounds produced by rhizospheric Pseudomonas putida. Canadian Journal of Microbiology. 39(12): 1150-1154. <https://doi.org/10.1139/m93-173>
+
+ 
+
+ 
+
+Cho YH, Yoo SD. Signaling role of fructose mediated by FINS1/FBP in Arabidopsis thaliana. PLoS Genet. 2011 Jan 6;7(1):e1001263. doi: 10.1371/journal.pgen.1001263. PMID: 21253566; PMCID: PMC3017112.
+
+\
+**That concludes week 2 of the project! Please hand in your .rmd and .pdf files on Canvas for your project grade. The week 2 deadline is Monday, January 20th 11:00.**
